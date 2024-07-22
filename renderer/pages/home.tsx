@@ -48,7 +48,7 @@ export default function HomePage() {
       <Head>
         <title>Calculo da falta em p% da linha</title>
       </Head>
-      <div className='flex flex-col h-screen bg-zinc-600'>
+      <div className='flex flex-col h-screen bg-zinc-600 bg-pattern bg-no-repeat bg-center'>
         <header className='flex justify-end w-full p-4'>
           <Dialog open={isOpen} onOpenChange={setIsOpen}>
             <DialogTrigger asChild>
@@ -101,7 +101,11 @@ export default function HomePage() {
             </DialogContent>
           </Dialog>
         </header>
-        <main className="flex-1 flex justify-center items-center p-4">  
+        <main className="flex-1 flex flex-col justify-center items-center p-4">
+          <div className='flex flex-col justify-center items-center space-y-24 w-full'>
+            <h1 className='text-5xl font-bold text-zinc-200 text-center'>
+              Cálculo de Falta Deslizante
+            </h1>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
            <Button asChild className="shadow-shape">
               <Link  href={{
@@ -143,6 +147,11 @@ export default function HomePage() {
             }}
                 >Sistema Radial Trifásico</Link>
             </Button>
+          
+          </div>
+            <h2>
+              <sub>Desenvolvido por <a href="https://github.com/EuduardoP" target="_blank" rel="noreferrer">Eduardo Pires Rosa</a></sub>
+            </h2>
           </div>
         </main>
       </div>

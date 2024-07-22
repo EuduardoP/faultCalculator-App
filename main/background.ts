@@ -18,6 +18,8 @@ if (isProd) {
     width: 1000,
     height: 600,
     resizable: false,
+    center: true,
+    autoHideMenuBar: true,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
     },
