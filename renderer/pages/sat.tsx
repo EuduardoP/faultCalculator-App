@@ -21,7 +21,10 @@ import { Label } from '@/components/ui/label';
 import { ChartConfig, ChartContainer, ChartLegend, ChartLegendContent, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from 'recharts';
 import { toast, useToast } from '@/components/ui/use-toast';
-import { abs, arg,  complex } from 'mathjs';
+import { create, all, abs, arg, Complex, MathType} from 'mathjs';
+
+const config = {}
+const math = create(all, config);
 
 interface Result {
   p: number
@@ -40,12 +43,13 @@ interface FormValues {
   powerBAngle3: string
   deltaP: string
   selectValue: string
+  Zlt: string
   selectError: boolean
 }
 
-export default function SamPage() {
-  const router = useRouter();
-  const { toast } = useToast();
+export default function SatPage() {
+  const router = useRouter()
+  const { toast } = useToast()
   const { potencialBase, voltageBase } = router.query;
   const [formValues, setFormValues] = useState<FormValues>({
     powerA1: '',
@@ -58,10 +62,12 @@ export default function SamPage() {
     powerBAngle3: '',
     deltaP: '',
     selectValue: '',
+    Zlt: '',
     selectError: false
-  });
-  const [results, setResults] = useState<Result[]>([]);
-  const [chartData, setChartData] = useState([]);
+  })
+  const [results, setResults] = useState<Result[]>([])
+  const [chartData, setChartData] = useState([])
+  const complexNumberRegex = /^-?\d+(\.\d+)?\s*([+-]\s*\d+(\.\d+)?)?i$/
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target
@@ -80,20 +86,8 @@ export default function SamPage() {
   }
 
   const handleCalculate = () => {
-    const { powerA1, powerAAngle1, powerB1, powerBAngle1, powerA3, powerAAngle3, powerB3, powerBAngle3, deltaP, selectValue } = formValues;
+    const {powerA3, powerAAngle3, powerB3, powerBAngle3, deltaP, selectValue } = formValues;
 
-    if (selectValue === '') {
-      setFormValues({
-        ...formValues,
-        selectError: true
-      });
-      return
-    }
-
-    const powerAValue1 = parseFloat(powerA1)
-    const PowerAAngleValue1 = parseFloat(powerAAngle1) * Math.PI / 180
-    const powerBValue1 = parseFloat(powerB1)
-    const PowerBAngleValue1 = parseFloat(powerBAngle1) * Math.PI / 180
     const powerAValue3 = parseFloat(powerA3)
     const PowerAAngleValue3 = parseFloat(powerAAngle3) * Math.PI / 180
     const powerBValue3 = parseFloat(powerB3)
@@ -101,27 +95,76 @@ export default function SamPage() {
     const deltaPValue = parseFloat(deltaP)
     const potencialBaseValue = typeof potencialBase === 'string' ? parseFloat(potencialBase) : NaN
     const voltageBaseValue = typeof voltageBase === 'string' ? parseFloat(voltageBase) : NaN
+    const impedanceBaseValue = (voltageBaseValue*voltageBaseValue)/potencialBaseValue
 
-    if (!isNaN(powerAValue1) && !isNaN(powerBValue1) && !isNaN(powerAValue3) && !isNaN(powerBValue3) && !isNaN(deltaPValue) && !isNaN(potencialBaseValue) && !isNaN(voltageBaseValue)) {
+    if (!isNaN(powerAValue3) && !isNaN(powerBValue3) && !isNaN(deltaPValue) && !isNaN(potencialBaseValue) && !isNaN(voltageBaseValue)) {
       const newResults: Result[] = []
-      const newChartData: { deltaPGraph: string; pu: number; Ampers: number; }[] = []
-      let adjustedPowerA1 = complex({ abs: powerAValue1, arg: PowerAAngleValue1 })
-      let adjustedPowerB1 = complex({ abs: powerBValue1, arg: PowerBAngleValue1 })
-      let adjustedPowerA3 = complex({ abs: powerAValue3, arg: PowerAAngleValue3 })
-      let adjustedPowerB3 = complex({ abs: powerBValue3, arg: PowerBAngleValue3 })
+      const newChartData: { deltaPGraph: string; pu: MathType; Ampers: MathType; }[] = []
+      let adjustedPowerA3: Complex = math.complex({ r: powerAValue3, phi: PowerAAngleValue3 })
+      let adjustedPowerB3: Complex = math.complex({ r: powerBValue3, phi: PowerBAngleValue3 })
       
 
       if (selectValue === 'MVA') {
-        adjustedPowerA1 = adjustedPowerA1.div(potencialBaseValue)
-        adjustedPowerB1 = adjustedPowerB1.div(potencialBaseValue)
+        adjustedPowerA3 = math.divide(adjustedPowerA3, potencialBaseValue) as Complex
+        adjustedPowerB3 = math.divide(adjustedPowerB3, potencialBaseValue) as Complex
       }
+      const Zlt = math.divide(
+          math.complex(formValues.Zlt),
+          impedanceBaseValue
+        ) as Complex
+      const roots = math.polynomialRoot(
+        math.multiply(adjustedPowerA3,math.pow(Zlt,2)) as unknown as Complex,
+        math.multiply(adjustedPowerA3,Zlt,math.subtract(2,math.multiply(adjustedPowerB3,Zlt))) as unknown as Complex,
+        math.subtract(math.subtract(adjustedPowerA3,adjustedPowerB3),math.multiply(adjustedPowerA3,adjustedPowerB3,Zlt)) as unknown as Complex
+      )
+      
+      const findPositiveRealComplex = (roots) => {
+        for (const root of roots) {
+          const realPart = math.re(root)as unknown as number;
+          if (realPart > 0) {
+            return root;
+          }
+        }
+        return null;
+      };
+      
+      const zb1 = findPositiveRealComplex(roots);
+
+      const za1 = math.divide(
+        math.add(zb1,Zlt),
+        math.subtract(math.multiply(
+          adjustedPowerA3,
+          math.add(zb1,Zlt)
+        ),1)
+      )
       for (let p = 0; p <= 100; p += deltaPValue) {
-        const pValue = p / 100;
-        const icc_radial_1_pu = adjustedPowerA1.mul(adjustedPowerB1).div((adjustedPowerA1.mul(pValue).add(adjustedPowerB1.mul(1 - pValue))));
-        const i_base = potencialBaseValue / (Math.sqrt(3) * voltageBaseValue);
-        const icc_radial_1 = icc_radial_1_pu.mul(i_base)
-        newResults.push({ p, icc_pu: `${abs(icc_radial_1_pu).toFixed(4)}∡ ${(arg(icc_radial_1_pu) * 180 / Math.PI ).toFixed(2)}°`, icc_amps: `${abs(icc_radial_1).toFixed(4)} ∡ ${(arg(icc_radial_1) * 180 / Math.PI ).toFixed(2)}°` });
-        newChartData.push({ deltaPGraph: `${p}%`, pu: abs(icc_radial_1_pu), Ampers: abs(icc_radial_1) });
+        const pValue = p / 100
+        
+        const icc_radial_1_pu: Complex = math.divide(
+          math.add(za1,zb1,Zlt),
+          math.multiply(math.add(za1,math.multiply(pValue,Zlt)),
+          math.add(zb1,math.multiply(1-pValue,Zlt))
+        )
+        ) as Complex
+      
+        const i_base = math.divide(potencialBaseValue, math.multiply(math.sqrt(3), voltageBaseValue))
+
+        const icc_radial_1: Complex = math.multiply(icc_radial_1_pu, i_base) as Complex
+
+        const absIccRadial1Pu = math.abs(icc_radial_1_pu) as unknown as number
+        const argIccRadial1Pu = math.arg(icc_radial_1_pu) as unknown as number
+        const absIccRadial1 = math.abs(icc_radial_1) as unknown as number
+        const argIccRadial1 = math.arg(icc_radial_1) as unknown as number
+        newResults.push({ 
+          p, 
+          icc_pu: `${absIccRadial1Pu.toFixed(4)}∡ ${(argIccRadial1Pu * 180 / Math.PI ).toFixed(2)}°`, 
+          icc_amps: `${absIccRadial1.toFixed(4)} ∡ ${(argIccRadial1 * 180 / Math.PI ).toFixed(2)}°` 
+        })
+        newChartData.push({ 
+          deltaPGraph: `${p}%`, 
+          pu: abs(icc_radial_1_pu), 
+          Ampers: abs(icc_radial_1) 
+        })
       }
       setResults(newResults);
       setChartData(newChartData);
@@ -133,6 +176,31 @@ export default function SamPage() {
       })
     }
   };
+  const handleBlur = (value: string) => {
+    const powerAngle = parseFloat(value) || 0
+    
+    if (powerAngle > 0) {
+      toast({
+        variant: 'destructive',
+        title: 'Erro nos dados',
+        description: "Ângulos devem ser conjugados.",
+      })
+      return
+    }
+  }
+
+  const handleComplexBlur = () => {
+    const { Zlt } = formValues;
+
+    if (!complexNumberRegex.test(Zlt)) {
+      toast({
+        variant: 'destructive',
+        title: 'Erro na entrada',
+        description: "O valor da entrada deve ser do formato 'a + bi",
+    })
+      return
+    }
+  };
 
   const handleExport = () => {
     if (results.length === 0) {
@@ -141,7 +209,7 @@ export default function SamPage() {
         title: 'Erro na exportação',
         description: "Não há dados para exportar.",
       })
-      return;
+      return
     }
 
     const csvContent = "data:text/csv;charset=utf-8," +
@@ -170,12 +238,15 @@ export default function SamPage() {
   return (
     <React.Fragment>
       <Head>
-        <title>Sistema em Anel Monofásico</title>
+        <title>Sistema em Anel Trifásico</title>
       </Head>
       <div className='flex flex-col bg-zinc-600 h-screen'>
         <header className='flex justify-start items-center w-full p-4'>
           <Button asChild variant='outline'>
-            <Link href="/home"><ArrowLeft />Voltar</Link>
+            <Link href={{
+              pathname: '/home',
+              query: { ...router.query }
+            }}><ArrowLeft />Voltar</Link>
           </Button>
           <nav className='flex gap-2 ml-5 justify-start items-center bg-zinc-200 rounded-lg p-2 w-full'>
             <Label className='ml-2'>Como será inserido os dados: </Label>
@@ -206,30 +277,8 @@ export default function SamPage() {
               alt="Sistema Anel Trifásica"
             />
           </div>
-          <div className={`flex flex-row justify-center gap-6 mb-4 bg-zinc-100 p-2 rounded-lg border shadow-shape ${!formValues.selectValue ? 'text-zinc-400' : ''}`}>
+          <div className={`flex flex-row justify-center items-center gap-6 mb-4 bg-zinc-100 p-2 rounded-lg border shadow-shape ${!formValues.selectValue ? 'text-zinc-400' : ''}`}>
             <div className='flex flex-col gap-2 '>
-              <sub className='p-1'>SCC 1ɸ</sub>
-              <div className='flex flex-row gap-2 '>
-                <Input
-                  placeholder='Módulo barra A'
-                  className='w-32'
-                  name='powerA1'
-                  value={formValues.powerA1}
-                  onChange={handleInputChange}
-                  type='number'
-                  disabled={!formValues.selectValue} 
-                />
-                <Input
-                  placeholder='Ângulo barra A'
-                  className='w-32'
-                  name='powerAAngle1'
-                  value={formValues.powerAAngle1}
-                  onChange={handleInputChange}
-                  type='number'
-                  disabled={!formValues.selectValue} 
-                />
-              </div>
-              <sub className='p-1'>SCC 3ɸ</sub>
               <div className='flex flex-row gap-2 '>
                 <Input
                   placeholder='Módulo barra A'
@@ -248,6 +297,7 @@ export default function SamPage() {
                   onChange={handleInputChange}
                   type='number'
                   disabled={!formValues.selectValue} 
+                  onBlur={(e)=> handleBlur(e.target.value)}
                 />
               </div>
             </div>
@@ -255,59 +305,28 @@ export default function SamPage() {
                 <sub className='p-1'> Impedância de sequência positiva da linha</sub>
                 <div className='flex flex-row gap-2 '>
                 <Input
-                  placeholder='R da linha'
-                  className='w-32'
-                  name='powerA1'
-                  value={formValues.powerA1}
+                  placeholder='Z da linha. Ex: 4 - 2i'
+                  className='w-44'
+                  name='Zlt'
+                  value={formValues.Zlt}
                   onChange={handleInputChange}
-                  type='number'
-                  disabled={!formValues.selectValue} 
-                />
-                <Input
-                  placeholder='X da linha'
-                  className='w-32'
-                  name='powerAAngle1'
-                  value={formValues.powerAAngle1}
-                  onChange={handleInputChange}
-                  type='number'
-                  disabled={!formValues.selectValue} 
+                  type='text'
+                  disabled={!formValues.selectValue}
+                  onBlur={handleComplexBlur}
                 />
                 </div>
                 <Input
-              placeholder='Δp%'
-              className='w-14'
-              name='deltaP'
-              value={formValues.deltaP}
-              onChange={handleInputChange}
-              type='number'
-              disabled={!formValues.selectValue}
-            />
-              </div>
+                  placeholder='Δp%'
+                  className='w-14'
+                  name='deltaP'
+                  value={formValues.deltaP}
+                  onChange={handleInputChange}
+                  type='number'
+                  disabled={!formValues.selectValue}
+                />
+            </div>
             
             <div className='flex flex-col gap-2 '>
-            
-            <sub className='p-1'>SCC 1ɸ</sub>
-              <div className='flex flex-row gap-2 '>
-                <Input
-                  placeholder='Módulo barra B'
-                  className='w-32'
-                  name='powerB1'
-                  value={formValues.powerB1}
-                  onChange={handleInputChange}
-                  type='number'
-                  disabled={!formValues.selectValue} 
-                />
-                <Input
-                  placeholder='Ângulo barra B'
-                  className='w-32'
-                  name='powerBAngle1'
-                  value={formValues.powerBAngle1}
-                  onChange={handleInputChange}
-                  type='number'
-                  disabled={!formValues.selectValue} 
-                />
-              </div>
-              <sub className='p-1'>SCC 3ɸ</sub>
               <div className='flex flex-row gap-2 '>
                 <Input
                   placeholder='Módulo barra B'
@@ -325,7 +344,8 @@ export default function SamPage() {
                   value={formValues.powerBAngle3}
                   onChange={handleInputChange}
                   type='number'
-                  disabled={!formValues.selectValue} 
+                  disabled={!formValues.selectValue}
+                  onBlur={(e)=> handleBlur(e.target.value)}
                 />
               </div>
            
@@ -384,8 +404,8 @@ export default function SamPage() {
                   <thead>
                     <tr className='bg-zinc-100'>
                       <th className='border border-zinc-400 px-2 py-1'>Percentual</th>
-                      <th className='border border-zinc-400 bg-[#f69b8b]/50 px-2 py-1'>Icc 1ɸ(pu)</th>
-                      <th className='border border-zinc-400 bg-[#60a5fa]/50 px-2 py-1'>Icc 1ɸ(A)</th>
+                      <th className='border border-zinc-400 bg-[#f69b8b]/50 px-2 py-1'>Icc 3ɸ(pu)</th>
+                      <th className='border border-zinc-400 bg-[#60a5fa]/50 px-2 py-1'>Icc 3ɸ(kA)</th>
                     </tr>
                   </thead>
                   <tbody>

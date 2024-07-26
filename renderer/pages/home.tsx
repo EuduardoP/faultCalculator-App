@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -15,13 +15,31 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/components/ui/use-toast';
 import { Bolt, Check, CircleX } from 'lucide-react';
+import { useRouter } from 'next/router';
 
 
 export default function HomePage() {
-  const [isOpen, setIsOpen] = useState(true);
-  const { toast } = useToast();
-  const [voltageBase, setVoltageBase] = useState('');
-  const [potencialBase, setPotencialBase] = useState('');
+  const [isOpen, setIsOpen] = useState(false)
+  const { toast } = useToast()
+  const router = useRouter()
+  const [voltageBase, setVoltageBase] = useState('')
+  const [potencialBase, setPotencialBase] = useState('')
+
+  useEffect(() => {
+
+    if (Object.keys(router.query).length > 0) {
+      setIsOpen(false)
+    } else {
+      setIsOpen(true)
+    }
+
+    if (router.query.voltageBase) {
+      setVoltageBase(router.query.voltageBase as string)
+    }
+    if (router.query.potencialBase) {
+      setPotencialBase(router.query.potencialBase as string)
+    }
+  }, [router.query])
 
 
   const variant = Number(voltageBase) > 0 && Number(potencialBase) > 0 ? 'default' : 'destructive'

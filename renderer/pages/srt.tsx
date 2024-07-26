@@ -21,7 +21,7 @@ import { Label } from '@/components/ui/label';
 import { ChartConfig, ChartContainer, ChartLegend, ChartLegendContent, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from 'recharts';
 import { toast, useToast } from '@/components/ui/use-toast';
-import { abs, arg,  complex } from 'mathjs';
+import math, { abs, arg,  Complex,  complex, MathType } from 'mathjs';
 
 interface Result {
   p: number
@@ -92,22 +92,44 @@ export default function SrtPage() {
 
     if (!isNaN(powerAValue) && !isNaN(powerBValue) && !isNaN(deltaPValue) && !isNaN(potencialBaseValue) && !isNaN(voltageBaseValue)) {
       const newResults: Result[] = []
-      const newChartData: { deltaPGraph: string; pu: number; Ampers: number; }[] = []
-      let adjustedPowerA = complex({ abs: powerAValue, arg: PowerAAngleValue })
-      let adjustedPowerB = complex({ abs: powerBValue, arg: PowerBAngleValue })
+      const newChartData: { deltaPGraph: string; pu: MathType; Ampers: MathType; }[] = []
+      let adjustedPowerA: Complex = math.complex({ r: powerAValue, phi: PowerAAngleValue })
+      let adjustedPowerB: Complex = math.complex({ r: powerBValue, phi: PowerBAngleValue })
       
 
       if (selectValue === 'MVA') {
-        adjustedPowerA = adjustedPowerA.div(potencialBaseValue)
-        adjustedPowerB = adjustedPowerB.div(potencialBaseValue)
+        adjustedPowerA = math.divide(adjustedPowerA, potencialBaseValue) as Complex
+        adjustedPowerB = math.divide(adjustedPowerB, potencialBaseValue) as Complex
       }
       for (let p = 0; p <= 100; p += deltaPValue) {
-        const pValue = p / 100;
-        const icc_radial_1_pu = adjustedPowerA.mul(adjustedPowerB).div((adjustedPowerA.mul(pValue).add(adjustedPowerB.mul(1 - pValue))));
-        const i_base = potencialBaseValue / (Math.sqrt(3) * voltageBaseValue);
-        const icc_radial_1 = icc_radial_1_pu.mul(i_base)
-        newResults.push({ p, icc_pu: `${abs(icc_radial_1_pu).toFixed(4)}∡ ${(arg(icc_radial_1_pu) * 180 / Math.PI ).toFixed(2)}°`, icc_amps: `${abs(icc_radial_1).toFixed(4)} ∡ ${(arg(icc_radial_1) * 180 / Math.PI ).toFixed(2)}°` });
-        newChartData.push({ deltaPGraph: `${p}%`, pu: abs(icc_radial_1_pu), Ampers: abs(icc_radial_1) });
+        const pValue = p / 100
+
+        const icc_radial_1_pu: Complex = math.divide(
+          math.multiply(adjustedPowerA, adjustedPowerB),
+          math.add(
+            math.multiply(adjustedPowerA, pValue),
+            math.multiply(adjustedPowerB, 1 - pValue)
+          )
+        ) as Complex
+        const i_base = math.divide(potencialBaseValue, math.multiply(math.sqrt(3), voltageBaseValue))
+
+        const icc_radial_1: Complex = math.multiply(icc_radial_1_pu, i_base) as Complex
+
+        const absIccRadial1Pu = math.abs(icc_radial_1_pu) as unknown as number
+        const argIccRadial1Pu = math.arg(icc_radial_1_pu) as unknown as number
+        const absIccRadial1 = math.abs(icc_radial_1) as unknown as number
+        const argIccRadial1 = math.arg(icc_radial_1) as unknown as number
+        newResults.push({ 
+          p, 
+          icc_pu: `${absIccRadial1Pu.toFixed(4)}∡ ${(argIccRadial1Pu * 180 / Math.PI ).toFixed(2)}°`, 
+          icc_amps: `${absIccRadial1.toFixed(4)} ∡ ${(argIccRadial1 * 180 / Math.PI ).toFixed(2)}°` 
+        })
+        console.log(newResults)
+        newChartData.push({ 
+          deltaPGraph: `${p}%`, 
+          pu: abs(icc_radial_1_pu), 
+          Ampers: abs(icc_radial_1) 
+        })
       }
       setResults(newResults);
       setChartData(newChartData);
@@ -119,6 +141,19 @@ export default function SrtPage() {
       })
     }
   };
+
+  const handleBlur = (value: string) => {
+    const powerAngle = parseFloat(value) || 0
+
+    if (powerAngle > 0) {
+      toast({
+        variant: 'destructive',
+        title: 'Erro nos dados',
+        description: "Ângulos devem ser conjugados.",
+      })
+      return
+    }
+  }
 
   const handleExport = () => {
     if (results.length === 0) {
@@ -161,7 +196,10 @@ export default function SrtPage() {
       <div className='flex flex-col bg-zinc-600 h-screen'>
         <header className='flex justify-start items-center w-full p-4'>
           <Button asChild variant='outline'>
-            <Link href="/home"><ArrowLeft />Voltar</Link>
+            <Link href={{
+                pathname: '/home',
+                query: { ...router.query }
+              }}><ArrowLeft />Voltar</Link>
           </Button>
           <nav className='flex gap-2 ml-5 justify-start items-center bg-zinc-200 rounded-lg p-2 w-full'>
             <Label className='ml-2'>Como será inserido os dados: </Label>
@@ -202,7 +240,8 @@ export default function SrtPage() {
                 value={formValues.powerA}
                 onChange={handleInputChange}
                 type='number'
-                disabled={!formValues.selectValue} 
+                disabled={!formValues.selectValue}
+                
               />
               <Input
                 placeholder='Ângulo barra A'
@@ -211,7 +250,8 @@ export default function SrtPage() {
                 value={formValues.powerAAngle}
                 onChange={handleInputChange}
                 type='number'
-                disabled={!formValues.selectValue} 
+                disabled={!formValues.selectValue}
+                onBlur={(e) => handleBlur(e.target.value)}
               />
             </div>
             <Input
@@ -241,6 +281,7 @@ export default function SrtPage() {
                 onChange={handleInputChange}
                 type='number'
                 disabled={!formValues.selectValue}
+                onBlur={(e) => handleBlur(e.target.value)}
               />
             </div>
           </div>
