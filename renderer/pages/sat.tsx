@@ -33,17 +33,13 @@ interface Result {
 }
 
 interface FormValues {
-  powerA1: string
-  powerAAngle1: string
-  powerB1: string
-  powerBAngle1: string
   powerA3: string
   powerAAngle3: string
   powerB3: string
   powerBAngle3: string
   deltaP: string
   selectValue: string
-  Zlt: string
+  zLT: string
   selectError: boolean
 }
 
@@ -52,17 +48,13 @@ export default function SatPage() {
   const { toast } = useToast()
   const { potencialBase, voltageBase } = router.query;
   const [formValues, setFormValues] = useState<FormValues>({
-    powerA1: '',
-    powerAAngle1: '',
-    powerB1: '',
-    powerBAngle1: '',
     powerA3: '',
     powerAAngle3: '',
     powerB3: '',
     powerBAngle3: '',
     deltaP: '',
     selectValue: '',
-    Zlt: '',
+    zLT: '',
     selectError: false
   })
   const [results, setResults] = useState<Result[]>([])
@@ -77,6 +69,15 @@ export default function SatPage() {
     })
   }
 
+  const areAllFieldsFilled = () => {
+    // Campos obrigatórios
+    const { powerA3, powerAAngle3, powerB3, powerBAngle3, deltaP, zLT } = formValues
+    
+    // Verifique se todos os campos obrigatórios estão preenchidos
+    return [powerA3, powerAAngle3, powerB3, powerBAngle3, deltaP, zLT].every(value => value.trim() !== '') && formValues.selectValue !== ''
+  }
+  
+
   const handleSelectChange = (value: string) => {
     setFormValues({
       ...formValues,
@@ -88,16 +89,16 @@ export default function SatPage() {
   const handleCalculate = () => {
     const {powerA3, powerAAngle3, powerB3, powerBAngle3, deltaP, selectValue } = formValues;
 
-    const powerAValue3 = parseFloat(powerA3)
-    const PowerAAngleValue3 = parseFloat(powerAAngle3) * Math.PI / 180
-    const powerBValue3 = parseFloat(powerB3)
-    const PowerBAngleValue3 = parseFloat(powerBAngle3) * Math.PI / 180
-    const deltaPValue = parseFloat(deltaP)
-    const potencialBaseValue = typeof potencialBase === 'string' ? parseFloat(potencialBase) : NaN
-    const voltageBaseValue = typeof voltageBase === 'string' ? parseFloat(voltageBase) : NaN
-    const impedanceBaseValue = (voltageBaseValue*voltageBaseValue)/potencialBaseValue
+    const powerAValue3 = parseFloat(powerA3 as string) || 0;
+  const PowerAAngleValue3 = parseFloat(powerAAngle3 as string) * Math.PI / 180 || 0;
+  const powerBValue3 = parseFloat(powerB3 as string) || 0;
+  const PowerBAngleValue3 = parseFloat(powerBAngle3 as string) * Math.PI / 180 || 0;
+  const deltaPValue = parseFloat(deltaP as string) || 0;
+  const potencialBaseValue = parseFloat(potencialBase as string) || 0;
+  const voltageBaseValue = parseFloat(voltageBase as string) || 0;
+  const impedanceBaseValue = (voltageBaseValue * voltageBaseValue) / potencialBaseValue || 0;
 
-    if (!isNaN(powerAValue3) && !isNaN(powerBValue3) && !isNaN(deltaPValue) && !isNaN(potencialBaseValue) && !isNaN(voltageBaseValue)) {
+    if (potencialBaseValue > 0 && voltageBaseValue > 0 && impedanceBaseValue > 0) {
       const newResults: Result[] = []
       const newChartData: { deltaPGraph: string; pu: MathType; Ampers: MathType; }[] = []
       let adjustedPowerA3: Complex = math.complex({ r: powerAValue3, phi: PowerAAngleValue3 })
@@ -108,14 +109,14 @@ export default function SatPage() {
         adjustedPowerA3 = math.divide(adjustedPowerA3, potencialBaseValue) as Complex
         adjustedPowerB3 = math.divide(adjustedPowerB3, potencialBaseValue) as Complex
       }
-      const Zlt = math.divide(
-          math.complex(formValues.Zlt),
+      const zLT = math.divide(
+          math.complex(formValues.zLT),
           impedanceBaseValue
         ) as Complex
       const roots = math.polynomialRoot(
-        math.multiply(adjustedPowerA3,math.pow(Zlt,2)) as unknown as Complex,
-        math.multiply(adjustedPowerA3,Zlt,math.subtract(2,math.multiply(adjustedPowerB3,Zlt))) as unknown as Complex,
-        math.subtract(math.subtract(adjustedPowerA3,adjustedPowerB3),math.multiply(adjustedPowerA3,adjustedPowerB3,Zlt)) as unknown as Complex
+        math.multiply(adjustedPowerA3,math.pow(zLT,2)) as unknown as Complex,
+        math.multiply(adjustedPowerA3,zLT,math.subtract(2,math.multiply(adjustedPowerB3,zLT))) as unknown as Complex,
+        math.subtract(math.subtract(adjustedPowerA3,adjustedPowerB3),math.multiply(adjustedPowerA3,adjustedPowerB3,zLT)) as unknown as Complex
       )
       
       const findPositiveRealComplex = (roots) => {
@@ -131,19 +132,19 @@ export default function SatPage() {
       const zb1 = findPositiveRealComplex(roots);
 
       const za1 = math.divide(
-        math.add(zb1,Zlt),
+        math.add(zb1,zLT),
         math.subtract(math.multiply(
           adjustedPowerA3,
-          math.add(zb1,Zlt)
+          math.add(zb1,zLT)
         ),1)
       )
       for (let p = 0; p <= 100; p += deltaPValue) {
         const pValue = p / 100
         
         const icc_radial_1_pu: Complex = math.divide(
-          math.add(za1,zb1,Zlt),
-          math.multiply(math.add(za1,math.multiply(pValue,Zlt)),
-          math.add(zb1,math.multiply(1-pValue,Zlt))
+          math.add(za1,zb1,zLT),
+          math.multiply(math.add(za1,math.multiply(pValue,zLT)),
+          math.add(zb1,math.multiply(1-pValue,zLT))
         )
         ) as Complex
       
@@ -190,9 +191,9 @@ export default function SatPage() {
   }
 
   const handleComplexBlur = () => {
-    const { Zlt } = formValues;
+    const { zLT } = formValues
 
-    if (!complexNumberRegex.test(Zlt)) {
+    if (!complexNumberRegex.test(zLT)) {
       toast({
         variant: 'destructive',
         title: 'Erro na entrada',
@@ -200,7 +201,7 @@ export default function SatPage() {
     })
       return
     }
-  };
+  }
 
   const handleExport = () => {
     if (results.length === 0) {
@@ -307,8 +308,8 @@ export default function SatPage() {
                 <Input
                   placeholder='Z da linha. Ex: 4 - 2i'
                   className='w-44'
-                  name='Zlt'
-                  value={formValues.Zlt}
+                  name='zLT'
+                  value={formValues.zLT}
                   onChange={handleInputChange}
                   type='text'
                   disabled={!formValues.selectValue}
@@ -354,7 +355,7 @@ export default function SatPage() {
 
           <Drawer>
             <DrawerTrigger asChild>
-              <Button onClick={handleCalculate} disabled={!formValues.selectValue}>Calcular</Button>
+              <Button onClick={handleCalculate} disabled={!areAllFieldsFilled()}>Calcular</Button>
             </DrawerTrigger>
             <DrawerContent >
               <DrawerHeader>

@@ -340,7 +340,7 @@ export default function SrmPage() {
                     <tr className='bg-zinc-100'>
                       <th className='border border-zinc-400 px-2 py-1'>Percentual</th>
                       <th className='border border-zinc-400 bg-[#f69b8b]/50 px-2 py-1'>Icc 1ɸ(pu)</th>
-                      <th className='border border-zinc-400 bg-[#60a5fa]/50 px-2 py-1'>Icc 1ɸ(A)</th>
+                      <th className='border border-zinc-400 bg-[#60a5fa]/50 px-2 py-1'>Icc 1ɸ(kA)</th>
                     </tr>
                   </thead>
                   <tbody>
