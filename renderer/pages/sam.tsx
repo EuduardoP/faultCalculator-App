@@ -145,7 +145,6 @@ export default function SamPage() {
         math.divide(3,adjustedPowerB1),
         math.divide(2,adjustedPowerB3)
       ) as Complex
-      console.log(R, W)
       const findPositiveRealComplex = (roots) => {
         for (const root of roots) {
           const realPart = math.re(root)as unknown as number;
@@ -170,8 +169,6 @@ export default function SamPage() {
       
       const zb1 = findPositiveRealComplex(positiveRoots);
       const za0 = findPositiveRealComplex(zeroRoots);
-      console.log('raizes:',zeroRoots)
-      console.log(za0, zb1)
 
       if (!zb1 || !za0 ) {
         toast({
@@ -185,7 +182,6 @@ export default function SamPage() {
         setDrawerOpen(true)
       }
  
-      console.log(za0)
 
       const za1 = math.divide(
         math.add(zb1,zLT.zLT1),
@@ -203,7 +199,6 @@ export default function SamPage() {
         ),
         math.subtract(za0,R)
       )
-      console.log(zb0)
       for (let p = 0; p <= 100; p += deltaPValue) {
         const pValue = p / 100
         
@@ -320,7 +315,10 @@ export default function SamPage() {
       <div className='flex flex-col bg-zinc-600 h-screen'>
         <header className='flex justify-start items-center w-full p-4'>
           <Button asChild variant='outline'>
-            <Link href="/home"><ArrowLeft />Voltar</Link>
+          <Link href={{
+              pathname: '/home',
+              query: { ...router.query }
+            }}><ArrowLeft />Voltar</Link>
           </Button>
           <nav className='flex gap-2 ml-5 justify-start items-center bg-zinc-200 rounded-lg p-2 w-full'>
             <Label className='ml-2'>Como será inserido os dados: </Label>

@@ -103,7 +103,6 @@ export default function SrmPage() {
         adjustedPowerA = math.divide(adjustedPowerA, potencialBaseValue) as Complex
         adjustedPowerB = math.divide(adjustedPowerB, potencialBaseValue) as Complex
       }
-      console.log(adjustedPowerA,adjustedPowerB)
       for (let p = 0; p <= 100; p += deltaPValue) {
         const pValue = p / 100
 

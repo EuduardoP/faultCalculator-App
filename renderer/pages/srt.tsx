@@ -124,7 +124,6 @@ export default function SrtPage() {
           icc_pu: `${absIccRadial1Pu.toFixed(4)}∡ ${(argIccRadial1Pu * 180 / Math.PI ).toFixed(2)}°`, 
           icc_amps: `${absIccRadial1.toFixed(4)} ∡ ${(argIccRadial1 * 180 / Math.PI ).toFixed(2)}°` 
         })
-        console.log(newResults)
         newChartData.push({ 
           deltaPGraph: `${p}%`, 
           pu: abs(icc_radial_1_pu), 
