@@ -34,6 +34,7 @@ Em caso de dúvidas, encontre o funcionamento do aplicativo na <a href="https://
 <ul>
   <li>Github: <a href="https://github.com/EuduardoP" target="_blank">@EuduardoP</a></li>
   <li>LinkedIn: <a href="https://linkedin.com/in/EuduardoP" target="_blank">@EuduardoP</a></li>
+  <li>Lattes: <a href="http://lattes.cnpq.br/1318830570413701" target="_blank">Eduardo Pires Rosa</a></li>
 </ul>
 
 ## 🤝 Contribuindo
