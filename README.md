@@ -1,6 +1,6 @@
-<center align="center">
+<p align="center">
   <img src="./resources/icon.png" width="110" >
-</center>
+</p>
 <h1 align="center">Bem vindo ao Fault Calculator 👋</h1>
 <p>
   <img alt="Version" src="https://img.shields.io/badge/version-Fault Calculator(1.0.2)-blue.svg?cacheSeconds=2592000" />
