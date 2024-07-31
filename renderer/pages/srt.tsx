@@ -21,7 +21,10 @@ import { Label } from '@/components/ui/label';
 import { ChartConfig, ChartContainer, ChartLegend, ChartLegendContent, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from 'recharts';
 import { toast, useToast } from '@/components/ui/use-toast';
-import math, { abs, arg,  Complex,  complex, MathType } from 'mathjs';
+import { create, all, abs, arg, Complex, MathType} from 'mathjs';
+
+const config = {}
+const math = create(all, config);
 
 interface Result {
   p: number
@@ -61,6 +64,14 @@ export default function SrtPage() {
       ...formValues,
       [name]: value
     })
+  }
+
+  const areAllFieldsFilled = () => {
+    // Campos obrigatórios
+    const { powerA, powerAAngle, powerB, powerBAngle, deltaP} = formValues
+    
+    // Verifique se todos os campos obrigatórios estão preenchidos
+    return [powerA, powerAAngle, powerB, powerBAngle, deltaP].every(value => value.trim() !== '') && formValues.selectValue !== ''
   }
 
   const handleSelectChange = (value: string) => {
@@ -165,7 +176,7 @@ export default function SrtPage() {
     }
 
     const csvContent = "data:text/csv;charset=utf-8," +
-      "Percentual,Icc_pu,Icc_A\n" +
+      "Percentual,Icc em pu,Icc em Ampers\n" +
       results.map(result => `${result.p}%,${result.icc_pu},${result.icc_amps}`).join("\n");
 
     const encodedUri = encodeURI(csvContent);
@@ -287,7 +298,7 @@ export default function SrtPage() {
 
           <Drawer>
             <DrawerTrigger asChild>
-              <Button onClick={handleCalculate} disabled={!formValues.selectValue}>Calcular</Button>
+              <Button onClick={handleCalculate} disabled={!areAllFieldsFilled()}>Calcular</Button>
             </DrawerTrigger>
             <DrawerContent >
               <DrawerHeader>

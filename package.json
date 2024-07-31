@@ -2,7 +2,7 @@
   "private": true,
   "name": "faultCalculator-app",
   "description": "Aplicativo para o calculo de falta em p% da linha",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "author": "Eduardo Pires Rosa <eduardo.pires@acad.ufsm.br>",
   "main": "app/background.js",
   "scripts": {

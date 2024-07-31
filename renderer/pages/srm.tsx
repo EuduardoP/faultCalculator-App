@@ -167,7 +167,7 @@ export default function SrmPage() {
     }
 
     const csvContent = "data:text/csv;charset=utf-8," +
-      "Percentual,Icc_pu,Icc_A\n" +
+      "Percentual,Icc em pu,Icc em Ampers\n" +
       results.map(result => `${result.p}%,${result.icc_pu},${result.icc_amps}`).join("\n");
 
     const encodedUri = encodeURI(csvContent);

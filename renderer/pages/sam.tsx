@@ -30,6 +30,8 @@ interface Result {
   p: number
   icc_pu: string
   icc_amps: string
+  icc_amps_aTop: string
+  icc_amps_bTop: string
 }
 
 interface FormValues {
@@ -218,19 +220,42 @@ export default function SamPage() {
             math.add(za0,zb0,zLT.zLT0))
           )
         ) as Complex
+
+        const icc_radial_1aTop_pu: Complex = math.multiply(
+          math.add(
+            math.multiply(2,math.divide(
+              math.add(zb1,math.multiply(1-pValue,zLT.zLT1)),
+              math.add(za1,zb1,zLT.zLT1)
+            )),
+            math.divide(
+              math.add(zb0,math.multiply(1-pValue,zLT.zLT0)),
+              math.add(za0,zb0,zLT.zLT0)
+            )),
+            math.divide(icc_radial_1_pu,3)
+          ) as Complex
+
+        const icc_radial_1bTop_pu: Complex = math.subtract(icc_radial_1_pu,icc_radial_1aTop_pu)
       
         const i_base = math.divide(potencialBaseValue, math.multiply(math.sqrt(3), voltageBaseValue))
 
         const icc_radial_1: Complex = math.multiply(icc_radial_1_pu, i_base) as Complex
+        const icc_radial_1aTop: Complex = math.multiply(icc_radial_1aTop_pu, i_base) as Complex
+        const icc_radial_1bTop: Complex = math.multiply(icc_radial_1bTop_pu, i_base) as Complex
 
         const absIccRadial1Pu = math.abs(icc_radial_1_pu) as unknown as number
         const argIccRadial1Pu = math.arg(icc_radial_1_pu) as unknown as number
         const absIccRadial1 = math.abs(icc_radial_1) as unknown as number
         const argIccRadial1 = math.arg(icc_radial_1) as unknown as number
+        const absIccRadial1aTop = math.abs(icc_radial_1aTop) as unknown as number
+        const argIccRadial1aTop = math.arg(icc_radial_1aTop) as unknown as number
+        const absIccRadial1bTop = math.abs(icc_radial_1bTop) as unknown as number
+        const argIccRadial1bTop = math.arg(icc_radial_1bTop) as unknown as number
         newResults.push({ 
           p, 
           icc_pu: `${absIccRadial1Pu.toFixed(4)}∡ ${(argIccRadial1Pu * 180 / Math.PI ).toFixed(2)}°`, 
-          icc_amps: `${absIccRadial1.toFixed(4)} ∡ ${(argIccRadial1 * 180 / Math.PI ).toFixed(2)}°` 
+          icc_amps: `${absIccRadial1.toFixed(4)} ∡ ${(argIccRadial1 * 180 / Math.PI ).toFixed(2)}°` ,
+          icc_amps_aTop: `${absIccRadial1aTop.toFixed(4)} ∡ ${(argIccRadial1aTop * 180 / Math.PI ).toFixed(2)}°` ,
+          icc_amps_bTop: `${absIccRadial1bTop.toFixed(4)} ∡ ${(argIccRadial1bTop * 180 / Math.PI ).toFixed(2)}°`
         })
         newChartData.push({ 
           deltaPGraph: `${p}%`, 
@@ -285,8 +310,8 @@ export default function SamPage() {
     }
 
     const csvContent = "data:text/csv;charset=utf-8," +
-      "Percentual,Icc_pu,Icc_A\n" +
-      results.map(result => `${result.p}%,${result.icc_pu},${result.icc_amps}`).join("\n");
+      "Percentual,Icc em pu,Icc em Ampers,Icc_A→p,Icc_B→p\n" +
+      results.map(result => `${result.p}%,${result.icc_pu},${result.icc_amps},${result.icc_amps_aTop},${result.icc_amps_bTop}`).join("\n");
 
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
@@ -539,6 +564,8 @@ export default function SamPage() {
                       <th className='border border-zinc-400 px-2 py-1'>Percentual</th>
                       <th className='border border-zinc-400 bg-[#f69b8b]/50 px-2 py-1'>Icc 1ɸ(pu)</th>
                       <th className='border border-zinc-400 bg-[#60a5fa]/50 px-2 py-1'>Icc 1ɸ(kA)</th>
+                      <th className='border border-zinc-400 px-2 py-1'>Icc 1ɸ<sub>A→p</sub> (kA)</th>
+                      <th className='border border-zinc-400 px-2 py-1'>Icc 1ɸ<sub>B→p</sub>(kA)</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -547,6 +574,8 @@ export default function SamPage() {
                         <td className='border border-zinc-400 px-2 py-1'>{result.p}%</td>
                         <td className='border border-zinc-400 px-2 py-1'>{result.icc_pu}</td>
                         <td className='border border-zinc-400 px-2 py-1'>{result.icc_amps}</td>
+                        <td className='border border-zinc-400 px-2 py-1'>{result.icc_amps_aTop}</td>
+                        <td className='border border-zinc-400 px-2 py-1'>{result.icc_amps_bTop}</td>
                       </tr>
                     ))}
                   </tbody>

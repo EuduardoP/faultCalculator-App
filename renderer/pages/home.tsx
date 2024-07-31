@@ -167,8 +167,9 @@ export default function HomePage() {
             </Button>
           
           </div>
-            <h2>
-              <sub>Desenvolvido por <a href="https://github.com/EuduardoP" target="_blank" rel="noreferrer">Eduardo Pires Rosa</a></sub>
+            <h2 className='text-center'>
+              <sub>Desenvolvido por <a href="https://github.com/EuduardoP" target="_blank" rel="noreferrer">Eduardo Pires Rosa</a></sub> <br />
+              <sub>Dúvidas podem ser resolvidas na <a href="https://github.com/EuduardoP/faultCalculator-App/wiki" target="_blank" className='text-blue-300 underline'>Wiki</a></sub>
             </h2>
           </div>
         </main>
