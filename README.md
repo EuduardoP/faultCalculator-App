@@ -1,4 +1,4 @@
-<center>
+<center align="center">
   <img src="./resources/icon.png" width="110" >
 </center>
 <h1 align="center">Bem vindo ao Fault Calculator 👋</h1>
